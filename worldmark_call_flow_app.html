@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WorldMark Call Flow Bubble Guide</title>
+  <style>
+    :root {
+      --bg: #0d1220;
+      --panel: #141b2d;
+      --panel2: #101827;
+      --ink: #eef4ff;
+      --muted: #aebbd3;
+      --line: #35425d;
+      --accent: #72d6ff;
+      --accent2: #b6f09c;
+      --warn: #ffd166;
+      --danger: #ff8fa3;
+      --bubble: #1f2b45;
+      --bubbleActive: #264f78;
+      --shadow: rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #18233b, var(--bg) 52%);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    header {
+      padding: 22px 28px 14px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(13,18,32,.88);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(12px);
+    }
+    h1 { margin: 0 0 6px; font-size: 24px; letter-spacing: .2px; }
+    header p { margin: 0; color: var(--muted); font-size: 14px; max-width: 1100px; }
+    .app {
+      display: grid;
+      grid-template-columns: 320px minmax(390px, 1fr) 410px;
+      gap: 18px;
+      padding: 18px;
+    }
+    .panel {
+      background: linear-gradient(180deg, rgba(20,27,45,.97), rgba(16,24,39,.98));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 18px 50px var(--shadow);
+      overflow: hidden;
+    }
+    .panel h2, .panel h3 {
+      margin: 0;
+    }
+    .panelHead {
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .panelHead small { color: var(--muted); }
+    .panelBody { padding: 16px; }
+    .ownerList { display: grid; gap: 10px; }
+    .ownerBtn {
+      border: 1px solid var(--line);
+      background: #172139;
+      color: var(--ink);
+      border-radius: 15px;
+      padding: 12px;
+      text-align: left;
+      cursor: pointer;
+      transition: .18s ease;
+    }
+    .ownerBtn:hover { transform: translateY(-1px); border-color: var(--accent); }
+    .ownerBtn.active { border-color: var(--accent2); background: #21324f; }
+    .ownerBtn strong { display:block; font-size: 14px; margin-bottom: 4px; }
+    .ownerBtn span { color: var(--muted); font-size: 12px; line-height: 1.35; display:block; }
+    .chips { display:flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .chip {
+      font-size: 11px;
+      padding: 4px 7px;
+      border-radius: 999px;
+      background: #0f1728;
+      border: 1px solid #2e3b56;
+      color: #cad6ea;
+    }
+    .summaryCard {
+      border: 1px solid var(--line);
+      background: rgba(10, 16, 29, .55);
+      border-radius: 16px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .summaryCard b { color: var(--accent2); }
+    .flowWrap {
+      padding: 18px;
+      min-height: 720px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .flowStage {
+      display: grid;
+      grid-template-columns: 1fr;
+      place-items: center;
+      width: 100%;
+      max-width: 720px;
+    }
+    .bubble {
+      width: min(92%, 520px);
+      min-height: 76px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, var(--bubble), #17233c);
+      color: var(--ink);
+      padding: 14px 22px;
+      cursor: pointer;
+      transition: .18s ease;
+      box-shadow: 0 10px 25px rgba(0,0,0,.18);
+      display:flex;
+      gap: 14px;
+      align-items:center;
+    }
+    .bubble:hover { border-color: var(--accent); transform: translateY(-1px) scale(1.006); }
+    .bubble.active { background: linear-gradient(180deg, var(--bubbleActive), #1b3557); border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(182,240,156,.11); }
+    .num {
+      min-width: 42px; height: 42px;
+      border-radius: 50%;
+      display:grid; place-items:center;
+      background: rgba(114,214,255,.14);
+      border: 1px solid rgba(114,214,255,.45);
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .bubbleText strong { display:block; font-size: 16px; }
+    .bubbleText span { display:block; color: var(--muted); font-size: 12px; margin-top: 3px; line-height: 1.35; }
+    .arrow {
+      height: 34px;
+      display:grid;
+      place-items:center;
+      color: #7e8aa3;
+      font-size: 22px;
+    }
+    .branchRow {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      width: 94%;
+      max-width: 690px;
+      margin: 3px 0 14px;
+    }
+    .miniBubble {
+      border: 1px solid #2d3a55;
+      background: #111a2d;
+      border-radius: 999px;
+      min-height: 48px;
+      padding: 8px 10px;
+      color: var(--muted);
+      font-size: 12px;
+      cursor:pointer;
+      transition:.18s ease;
+    }
+    .miniBubble:hover { color: var(--ink); border-color: var(--accent); }
+    .miniBubble.active { color: var(--ink); border-color: var(--accent2); background: #1c2d45; }
+    .guideTitle {
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+    .stageBadge {
+      display:inline-flex;
+      border: 1px solid rgba(114,214,255,.35);
+      color: var(--accent);
+      background: rgba(114,214,255,.1);
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+    .guideSection {
+      margin: 14px 0;
+      padding: 13px;
+      border-radius: 16px;
+      border: 1px solid #2e3b56;
+      background: rgba(13, 20, 36, .66);
+    }
+    .guideSection h4 {
+      margin: 0 0 8px;
+      color: #e5eeff;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+    }
+    .guideSection p, .guideSection li {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    .guideSection p { margin: 0; }
+    .guideSection ul { margin: 0; padding-left: 18px; }
+    .scriptLine {
+      font-size: 15px !important;
+      color: var(--ink) !important;
+      line-height: 1.5 !important;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    button.action {
+      border: 1px solid var(--line);
+      background: #1b2945;
+      color: var(--ink);
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor:pointer;
+      transition:.18s ease;
+    }
+    button.action:hover { border-color: var(--accent); background: #22365a; }
+    .objections {
+      display:flex; flex-wrap: wrap; gap: 8px;
+    }
+    .objBtn {
+      border: 1px solid #394964;
+      background: #121c30;
+      color: #d9e5f8;
+      border-radius: 999px;
+      padding: 8px 10px;
+      cursor:pointer;
+      font-size: 12px;
+    }
+    .objBtn:hover, .objBtn.active { border-color: var(--warn); color: var(--warn); }
+    .searchBox {
+      width: 100%;
+      background: #0f1728;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--ink);
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      outline: none;
+    }
+    .searchBox:focus { border-color: var(--accent); }
+    .legend {
+      display:flex; gap: 10px; flex-wrap:wrap; color: var(--muted); font-size: 12px;
+    }
+    .dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:4px; }
+    .dot.core { background: var(--accent); }
+    .dot.branch { background: var(--warn); }
+    .dot.close { background: var(--accent2); }
+    .footerNote {
+      color: #8d9ab3;
+      font-size: 12px;
+      line-height:1.4;
+      border-top: 1px solid var(--line);
+      padding: 12px 16px;
+    }
+    @media (max-width: 1200px) {
+      .app { grid-template-columns: 1fr; }
+      .flowWrap { min-height: unset; }
+      header { position: static; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>WorldMark Live Call Flow Bubble Guide</h1>
+    <p>Interactive prototype for reps: select the owner archetype, click the top-down bubbles, and use the right-side guide to stay on track during live calls. Built as a self-contained HTML file for easy handoff into React, Next.js, or a CRM overlay.</p>
+  </header>
+
+  <main class="app">
+    <aside class="panel">
+      <div class="panelHead">
+        <div>
+          <h2>Owner Type</h2>
+          <small>Recognize the archetype first</small>
+        </div>
+      </div>
+      <div class="panelBody">
+        <input id="ownerSearch" class="searchBox" placeholder="Search owner type, pain, destination..." />
+        <div id="ownerList" class="ownerList"></div>
+      </div>
+      <div class="footerNote">Use this left panel as the rep’s “diagnostic doorway.” Once the owner type is recognized, the center flow and right-side talk tracks adapt.</div>
+    </aside>
+
+    <section class="panel">
+      <div class="panelHead">
+        <div>
+          <h2>Top-Down Bubble Flow</h2>
+          <small>Click any stage to guide the conversation</small>
+        </div>
+        <div class="legend">
+          <span><i class="dot core"></i>Core</span>
+          <span><i class="dot branch"></i>Branch</span>
+          <span><i class="dot close"></i>Close</span>
+        </div>
+      </div>
+      <div class="flowWrap" id="flowWrap"></div>
+    </section>
+
+    <aside class="panel">
+      <div class="panelHead">
+        <div>
+          <h2>Live Guide</h2>
+          <small>Intention, script, signals, next move</small>
+        </div>
+      </div>
+      <div class="panelBody">
+        <div id="profileSummary"></div>
+        <div id="guide"></div>
+        <div class="guideSection">
+          <h4>Objection Router</h4>
+          <div class="objections" id="objections"></div>
+        </div>
+        <div id="objectionGuide"></div>
+        <div class="controls">
+          <button class="action" onclick="prevStage()">Previous Stage</button>
+          <button class="action" onclick="nextStage()">Next Stage</button>
+          <button class="action" onclick="copyStage()">Copy Current Talk Track</button>
+          <button class="action" onclick="resetFlow()">Reset Flow</button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+<script>
+const owners = [
+  {
+    id: 'young-family', name: 'Marcus & Jess Torres', archetype: 'The Young Family', tier: 'Bronze VIP', credits: '15,000',
+    tags: ['Beach', 'Theme Parks', 'Kids', 'School Calendar', 'Silver Path'],
+    recognizer: 'Couple with young kids. Wants family memories but struggles with PTO and school breaks.',
+    pain: 'Scheduling is a nightmare. They plan late and leave credits unused.',
+    driver: 'Family legacy and memory-making while the kids are still young.',
+    target: 'Help them see Spring Break plus summer. Silver becomes the natural coverage path.',
+    diagnosis: 'Their ownership is not broken. Their family calendar system is missing.',
+    benefitModules: ['Waitlist', 'Club Pass', 'Effective Coverage', 'Family Calendar Strategy'],
+    objections: ['money', 'timing', 'spouse', 'notUse'],
+    stages: {
+      discovery: ['What would a normal travel year look like if school and PTO were already handled?', 'How far out do you usually know the school calendar?', 'What trip do you want the kids to remember before they get older?'],
+      recap: 'You want one bigger family trip and one smaller getaway, but late planning and school calendars keep shrinking the ownership.',
+      recommendation: 'Silver is not status here. It is breathing room for Spring Break plus summer.',
+      close: 'If the smaller builder path gave you more family coverage without forcing the full jump, would that be worth looking at?'
+    }
+  },
+  {
+    id: 'empty-nesters', name: 'Bob & Linda Hartwell', archetype: 'The Empty Nesters', tier: 'Silver VIP', credits: '30,000',
+    tags: ['Cruises', 'Wine Country', 'Retired', 'Stress Relief', 'Diamond Path'],
+    recognizer: 'Retired couple with time now. Likes wine country, cruises, and slower travel.',
+    pain: 'They finally discovered destinations after retiring and now have more time than coverage.',
+    driver: 'Escape, peace, and just-the-two-of-us travel.',
+    target: 'Diamond gives enough room for a second international/cruise-style trip without banking stress.',
+    diagnosis: 'Their lifestyle expanded after retirement. Their account needs to catch up.',
+    benefitModules: ['Connections Cruises', 'TravelUp', 'RCI', 'Diamond Coverage'],
+    objections: ['money', 'think', 'fixedIncome', 'spouse'],
+    stages: {
+      discovery: ['Since retiring, what changed most about how you want to travel?', 'What cash travel are you still paying for outside the ownership?', 'What would the third trip each year be if credits were not tight?'],
+      recap: 'You are using the ownership, but retirement gave you more time than your Silver coverage was originally built for.',
+      recommendation: 'Diamond is the fit if the goal is a third meaningful trip or a cruise without cash leakage.',
+      close: 'If the monthly stayed inside your retirement comfort zone, would you rather keep paying cash for that third trip or shift more of it into ownership?'
+    }
+  },
+  {
+    id: 'adventure-dinks', name: 'Kai & Priya Nair', archetype: 'The Adventure DINKs', tier: 'Diamond VIP', credits: '45,000',
+    tags: ['International', 'Adventure', 'DINKs', 'High Usage', 'Founders Path'],
+    recognizer: 'No kids, dual income, sophisticated travelers. Burns credits fast.',
+    pain: 'Credit velocity and availability walls on popular exchange properties.',
+    driver: 'Bucket list, cultural immersion, new experiences.',
+    target: 'Founders-level balance gives credit cushion for back-to-back international trips.',
+    diagnosis: 'They do not lack desire. They travel faster than the account replenishes.',
+    benefitModules: ['RCI Strategy', 'Travel a la Carte', 'Personal Choice', 'Founders Cushion'],
+    objections: ['availability', 'trust', 'money', 'think'],
+    stages: {
+      discovery: ['Where is the system still not keeping up with you?', 'How often are you forced into cash alternatives?', 'What back-to-back trip would you build if credit cushion was not the constraint?'],
+      recap: 'You are not casual owners. The issue is velocity: international demand, exchange timing, and not enough cushion.',
+      recommendation: 'Founders is not a shiny label. It is trip architecture for high-velocity travelers.',
+      close: 'If the Founders structure reduced one or two cash pivots a year and gave you enough cushion for back-to-back trips, would it be worth comparing?'
+    }
+  },
+  {
+    id: 'snowbirds', name: 'Gene & Carol Whitmore', archetype: 'The Snowbirds', tier: 'Platinum VIP', credits: '65,000',
+    tags: ['Retired', 'Long Stays', 'Snowbird', 'Grandkids', 'Legacy'],
+    recognizer: 'Efficient retired owners. Warm-weather winter stays and PNW summers.',
+    pain: 'Long stays chew through credits unevenly. Family trips disrupt their rhythm.',
+    driver: 'Freedom, warmth, community, and legacy.',
+    target: 'Possibly a secondary Silver account for family/grandkid inheritance, only if the legacy use case is real.',
+    diagnosis: 'Their main account works for them. The question is whether it also works as a family hub.',
+    benefitModules: ['Legacy Structure', 'Secondary Account', 'Multi-Gen Strategy', 'Long-Stay Planning'],
+    objections: ['noNeed', 'money', 'kidsWontUse', 'think'],
+    stages: {
+      discovery: ['Does the ownership still mainly serve the two of you, or is it becoming a family hub?', 'When grandkids join, what gets sacrificed?', 'What do you want this ownership to become after you?'],
+      recap: 'Your account works beautifully for your winter rhythm. It gets tighter when it has to become a family asset too.',
+      recommendation: 'A smaller secondary structure only makes sense if it protects family trips without disturbing your Platinum routine.',
+      close: 'If this created one clean family lane per year without touching your snowbird rhythm, would it be worth looking at?'
+    }
+  },
+  {
+    id: 'reluctant', name: 'Derek Holman', archetype: 'The Reluctant Owner', tier: 'Bronze VIP', credits: '15,000',
+    tags: ['Low Use', 'Distrust', 'Single', 'Long Weekends', 'Re-Engagement'],
+    recognizer: 'Defensive, low-use owner who feels sold something he does not understand.',
+    pain: 'The ownership feels like a bill, not a benefit.',
+    driver: 'Originally novelty. Currently obligation.',
+    target: 'No upgrade. Get one curated trip booked first.',
+    diagnosis: 'Trust is the sale. Usage comes before expansion.',
+    benefitModules: ['Usage Strategy', 'Bonus Time', 'Small Unit Strategy', 'Curated First Win'],
+    objections: ['trust', 'notUse', 'money', 'hangup'],
+    stages: {
+      discovery: ['What made you buy originally?', 'What does the ownership feel like now?', 'What kind of simple trip would you actually take if it were easy?'],
+      recap: 'You are not against travel. You are against feeling like you bought something you do not understand.',
+      recommendation: 'No upgrade today. One curated long weekend to prove the ownership can work.',
+      close: 'If we find one simple trip using what you already own, would you be willing to actually take it?'
+    }
+  },
+  {
+    id: 'luxury', name: 'Jonathan & Simone Ashby', archetype: 'The Luxury Seekers', tier: 'High-Tier / Verify Status', credits: '65,000 listed',
+    tags: ['Luxury', 'Quality', 'VIP Identity', 'Hawaii', 'Europe'],
+    recognizer: 'Selective, status-aware owners with high property expectations.',
+    pain: 'One bad stay damages trust in the whole ownership.',
+    driver: 'Status, quality, recognition, premium experience.',
+    target: 'Curate premium usage. Lean into VIP benefits and travel-platform flexibility.',
+    diagnosis: 'They do not need more vacation. They need quality control and curation.',
+    benefitModules: ['Premium Curation', 'TravelUp', 'Personal Choice', 'Early Booking'],
+    objections: ['quality', 'trust', 'money', 'noNeed'],
+    stages: {
+      discovery: ['Where does the ownership still win for you?', 'Where does it fail your standard?', 'When a stay disappoints, do you question the whole ownership?'],
+      recap: 'The issue is not access. It is preserving a premium experience and avoiding properties that do not fit your standard.',
+      recommendation: 'Use ownership selectively where it wins. Use VIP travel tools where a boutique or luxury fit is better.',
+      close: 'If we built your next premium trip correctly before discussing anything else, would that help restore confidence?'
+    }
+  },
+  {
+    id: 'grandparents', name: 'Donna & Ray Espinoza', archetype: 'The Grandparent Orchestrators', tier: 'Silver VIP', credits: '30,000',
+    tags: ['Grandkids', 'Multi-Gen', '2BR+', 'Family Bonds', 'Diamond Path'],
+    recognizer: 'Grandparents planning for 6-8 people. Donna wants memories; Ray watches cost.',
+    pain: 'Always need 2BR or larger. Credits run out fast.',
+    driver: 'Building family bonds across generations.',
+    target: 'Diamond for one big trip plus one family reunion per year.',
+    diagnosis: 'Their emotional goal is family memories. Their account is still sized closer to couple travel.',
+    benefitModules: ['Diamond Coverage', '2BR Strategy', 'Family Contribution Plan', 'Waitlist'],
+    objections: ['money', 'kidsDontAppreciate', 'timing', 'spouse'],
+    stages: {
+      discovery: ['How many people are you really trying to fit?', 'Do you ever shorten trips or choose worse dates because of credits?', 'How many years before the older grandkids get harder to gather?'],
+      recap: 'You want the family together, but bigger units and credit ceilings make every trip feel like a puzzle.',
+      recommendation: 'Diamond supports bigger-unit travel and a second family gathering without constant credit stress.',
+      close: 'If the lodging became the family anchor and the adult kids handled the rest, would Diamond feel more reasonable?'
+    }
+  },
+  {
+    id: 'solo', name: 'Amanda Voss', archetype: 'The Solo Retreater', tier: 'Bronze VIP', credits: '15,000',
+    tags: ['Solo', 'Spa', 'Burnout', 'Small Unit', 'Restoration'],
+    recognizer: 'Career-focused solo owner who questions whether the product fits one person.',
+    pain: 'Feels awkward using credits alone or booking larger units solo.',
+    driver: 'Escape and restoration. Travel as decompression valve.',
+    target: 'Show studio/1BR strategy. She may be highly efficient before needing any upgrade.',
+    diagnosis: 'The product fits her if rest is treated as valid, not guilty.',
+    benefitModules: ['Studio/1BR Strategy', 'Midweek', 'Shoulder Season', 'Solo Reset Plan'],
+    objections: ['notForMe', 'money', 'guilt', 'notUse'],
+    stages: {
+      discovery: ['What kind of trip actually restores you?', 'How often do you need that reset?', 'What makes using credits alone feel questionable?'],
+      recap: 'You are not wasting credits by traveling solo. You are using the ownership as a recovery system.',
+      recommendation: 'Start with smaller-unit solo strategy before expansion. One solo reset and one optional friend trip.',
+      close: 'If we map two efficient solo-friendly trips, would you feel differently about the value of what you own?'
+    }
+  },
+  {
+    id: 'blended', name: 'Darren & Michelle Wade', archetype: 'The Blended Household', tier: 'Diamond VIP', credits: '45,000',
+    tags: ['4 Kids', 'Custody', 'Theme Parks', 'Reactive Planning', 'Platinum Path'],
+    recognizer: 'Blended family with four kids, multiple calendars, and reactive planning stress.',
+    pain: 'Custody calendars and late planning cause missed availability.',
+    driver: 'Proving the family unit works and creating shared memories.',
+    target: 'Teach 13-month planning system first. Platinum only after calendar discipline exists.',
+    diagnosis: 'The ownership is strong. The family operating system is weak.',
+    benefitModules: ['13-Month Calendar', 'Waitlist', 'Backup Date Strategy', 'Platinum Breathing Room'],
+    objections: ['availability', 'timing', 'exSchedules', 'money'],
+    stages: {
+      discovery: ['Which trips matter enough to plant a flag 13 months out?', 'What part of the calendar can be known early?', 'Who owns the family calendar and who backs them up?'],
+      recap: 'You need the trip to create one shared family story, but reactive planning is making every trip harder.',
+      recommendation: 'Platinum only makes sense if paired with a 13-month family operating system and backup waitlists.',
+      close: 'If we identify real dates and backup dates first, would the smaller step-up have a job?'
+    }
+  },
+  {
+    id: 'mileage', name: 'Phil & Connie Yamamoto', archetype: 'The Mileage Chasers', tier: 'Platinum VIP', credits: '65,000',
+    tags: ['RCI', 'International', 'Food Travel', 'Maximizers', 'Japan'],
+    recognizer: 'Sophisticated international travelers who use RCI and optimize heavily.',
+    pain: 'RCI exchange availability is hit-or-miss for high-demand international.',
+    driver: 'Collecting experiences. Travel is identity.',
+    target: '13-month RCI/deposit strategy; maybe Founders or secondary account if cash bailout math supports it.',
+    diagnosis: 'They need infrastructure, not hype. RCI Plan A, owner travel Plan B, cash Plan C.',
+    benefitModules: ['RCI Strategy', 'Confirm-First Discipline', 'Personal Choice', 'Founders Cushion'],
+    objections: ['availability', 'math', 'think', 'noNeed'],
+    stages: {
+      discovery: ['Where does RCI fail you most?', 'How often do you pay cash when exchange misses?', 'What is the next international target and how early are you willing to plan?'],
+      recap: 'You are sophisticated users. The question is whether cash bailouts are costing more than added ownership flexibility would.',
+      recommendation: 'Only expand if the math beats your annual cash bailout pattern and supports Japan/New Zealand-level targets.',
+      close: 'If the upgrade costs less than the cash leakage and improves backup strategy, is it worth comparing?'
+    }
+  }
+];
+
+const flow = [
+  { id:'recognize', title:'Recognize Owner Type', subtitle:'Identify archetype from behavior, pain, and travel identity', tone:'calm curiosity' },
+  { id:'open', title:'Open + Compliance Frame', subtitle:'Recorded line, appointment, screen share, vacation-memory hook', tone:'clean, familiar, non-salesy' },
+  { id:'frame', title:'Set the Advisory Frame', subtitle:'“I’ll understand first, then recommend only if it fits.”', tone:'detached authority' },
+  { id:'discover', title:'Discovery + Dream Build', subtitle:'Short stays, full weeks, people, unit size, dream trip, friction', tone:'curious, slow, human' },
+  { id:'diagnose', title:'Profile-Specific Diagnosis', subtitle:'Name the real gap without blaming the owner', tone:'candid, respectful' },
+  { id:'recap', title:'Mirror Recap', subtitle:'Repeat their words until they feel seen', tone:'precise empathy' },
+  { id:'coverage', title:'Effective Coverage Math', subtitle:'Credits = coverage = lifestyle capacity', tone:'simple, visual, practical' },
+  { id:'benefits', title:'Select 2-4 Benefit Modules', subtitle:'Only show benefits connected to what they said', tone:'tailored expert' },
+  { id:'financial', title:'Financial Logic / Why Now', subtitle:'Cash travel, inflation, credit stability, cost of waiting', tone:'matter-of-fact' },
+  { id:'recommend', title:'Recommendation', subtitle:'Full path, step-up path, builder path', tone:'confident, collaborative' },
+  { id:'credit', title:'Credit + Pricing', subtitle:'Verify eligibility, show numbers, keep options clear', tone:'procedural, steady' },
+  { id:'objections', title:'Objection Router', subtitle:'Money, spouse, timing, trust, availability, usage, quality', tone:'curious, not defensive' },
+  { id:'close', title:'Close / Next Best Action', subtitle:'Upgrade, smaller step, usage plan, or scheduled follow-up', tone:'decisive, service-oriented' }
+];
+
+const stageGuide = {
+  recognize: {
+    intention: 'Do not start selling until you know which game you are playing. The same credit package means different things to different owners.',
+    say: '“Before I show you anything, I want to understand where the ownership actually fits in your life right now.”',
+    ask: ['What does a normal travel year look like for you?', 'What feels easy with the ownership?', 'What still feels harder than it should?'],
+    watch: 'Listen for identity: parent, retiree, adventurer, skeptic, luxury buyer, grandparent, solo restorer, maximizer.'
+  },
+  open: {
+    intention: 'Lower resistance and make the call feel human before it feels transactional.',
+    say: '“I’m calling for our appointment, on a recorded line. I’m sending the screen share now. While that loads, what is one favorite or funniest vacation memory?”',
+    ask: ['Can you see my screen?', 'Can you mute the computer so we stay on the recorded phone line?', 'You own [X] credits and became an owner in [year], correct?'],
+    watch: 'Energy level. Rushed owners need tighter framing. Defensive owners need less enthusiasm and more honesty.'
+  },
+  frame: {
+    intention: 'Position yourself as diagnostic advisor, not pitch machine.',
+    say: '“I’m not going to bury you in a generic update. I’ll ask questions first, show only what applies, and if there’s a gap I’ll make a recommendation. Fair?”',
+    ask: ['What has your experience been like so far?', 'Anything you love?', 'Anything frustrating?'],
+    watch: 'Complaints are buying signals. They show engagement and reveal the value path.'
+  },
+  discover: {
+    intention: 'Build internal tension. Let the owner describe the gap themselves.',
+    say: '“Let’s talk about how you actually vacation, not just what the account says.”',
+    ask: ['Where do you go for short stays?', 'What full-week trips are on the list?', 'Who travels with you?', 'What unit size works?', 'What is the dream trip?', 'How many weeks per year would you travel if this worked correctly?'],
+    watch: 'Do not rush. This is the sale. Presentation too early creates objections later.'
+  },
+  diagnose: {
+    intention: 'Name the gap in a way that protects dignity and creates clarity.',
+    say: '“The ownership is not broken. The issue is [profile-specific diagnosis].”',
+    ask: ['Does that sound accurate?', 'Is that the main thing you would change?', 'What happens if that stays the same another year?'],
+    watch: 'The owner should say some version of “yes, that is exactly it.” If they do not, keep diagnosing.'
+  },
+  recap: {
+    intention: 'Make the recommendation feel like it came from their words.',
+    say: '“Let me make sure I heard you correctly…”',
+    ask: ['Did I miss anything important?', 'Is that the real picture?', 'Which of those matters most?'],
+    watch: 'A strong recap lowers resistance more than another benefit does.'
+  },
+  coverage: {
+    intention: 'Turn credits from abstract points into practical vacation capacity.',
+    say: '“Credits are not the goal. Coverage is the goal. The account should match the way you actually travel.”',
+    ask: ['Does that math make sense?', 'Can you see where the current account gets tight?', 'Would you rather plan around the account, or have the account match the plan?'],
+    watch: 'Avoid over-explaining charts. Tie every number to their trips, people, and unit size.'
+  },
+  benefits: {
+    intention: 'Show only the benefits that solve the stated gap. No buffet dumping.',
+    say: '“Based on what you told me, I’m only going to show the pieces that matter.”',
+    ask: ['Would you actually use that?', 'How would that change the trip?', 'Does that solve the issue you mentioned?'],
+    watch: 'If you show more than four benefits, the owner starts hearing fog.'
+  },
+  financial: {
+    intention: 'Make inaction visible. Compare ownership structure against cash travel over time.',
+    say: '“Most owners never map this out. What do you typically pay per night when you travel outside the ownership?”',
+    ask: ['How many rooms do you usually need?', 'How many years do you realistically see yourself traveling?', 'What are you still paying cash for?', 'Does that lifetime number surprise you?'],
+    watch: 'Do not weaponize fear. Use math as a mirror.'
+  },
+  recommend: {
+    intention: 'Give paths, not pressure. Make the owner choose between levels of fit.',
+    say: '“There are three ways to solve this: full solution, smart step-up, or conservative builder.”',
+    ask: ['Which feels most comfortable?', 'Does the smaller path still solve enough to matter?', 'If the numbers fit, would this be the right direction?'],
+    watch: 'The recommendation must connect directly to the recap.'
+  },
+  credit: {
+    intention: 'Move from value to affordability. Keep this procedural and calm.',
+    say: '“To get the most accurate pricing, I need to verify a few things, including credit. If you qualify, I can usually bring the numbers down.”',
+    ask: ['Where would you say your credit score sits?', 'Can I verify the account details?', 'If the numbers fit, are you comfortable looking at options?'],
+    watch: 'Do not sound excited. Excitement here reads as commission breath.'
+  },
+  objections: {
+    intention: 'Get behind the concern. Do not rebut the first surface objection.',
+    say: '“Totally fair. Can I ask what specifically about that gives you pause?”',
+    ask: ['Other than that, is there anything else?', 'Is it the solution, the timing, or the investment?', 'What would need to be true for this to feel comfortable?'],
+    watch: 'The first objection is often a decoy. Ask until the real one surfaces.'
+  },
+  close: {
+    intention: 'End with a clear next action: upgrade, smaller step, usage plan, or no-sale nurture.',
+    say: '“Based on what you told me, this is the path I’d recommend. Do you feel like this is the right next step?”',
+    ask: ['Why do you feel that way?', 'What part helps you most?', 'How would you like to handle the initial investment?'],
+    watch: 'If the owner is not ready, close the next best action. A usage win can be the right close.'
+  }
+};
+
+const objectionGuide = {
+  money: { label:'Money / Monthly', response:'“Other than affordability, is there anything else? Is it that the funds are not available, or that you need to see the value clearly enough to justify the investment?”', move:'Separate true funds issue from value uncertainty. Then drop to step-up or builder only if value is established.' },
+  timing: { label:'Timing', response:'“What would need to change for the timing to be right? If nothing changes with the ownership, does the travel problem get better on its own?”', move:'Force a concrete future condition. Most timing objections are vague discomfort.' },
+  spouse: { label:'Spouse / Partner', response:'“What do you think they would be most supportive of? What concern would they probably have? Can we get them on the phone so they hear the same information?”', move:'Do not let the absent spouse become a mystery monster. Map their likely objection.' },
+  think: { label:'Think It Over', response:'“Totally fair. What specifically do you feel like you need to think over: the solution, the timing, or the investment?”', move:'Make “thinking” specific. Then solve that specific thing.' },
+  availability: { label:'Availability', response:'“More credits alone do not create inventory. The strategy is earlier planning, waitlist, backup dates, and enough credit cushion when the right inventory appears.”', move:'Admit the limit. Then pair coverage with booking strategy.' },
+  trust: { label:'Trust / Burned Before', response:'“I would not ask you to buy more of something you do not trust. First, let’s prove the ownership can work with one real trip.”', move:'For distrust, sell usage first. Upgrade later.' },
+  notUse: { label:'Not Using It', response:'“Then more credits are not the first move. The first move is getting one clean win out of what you already own.”', move:'Re-engagement path. Curated trip before upgrade.' },
+  quality: { label:'Quality Concern', response:'“I’m not going to pretend every property fits your standard. Let’s curate where the ownership wins and use travel tools where a premium hotel is the better fit.”', move:'Luxury owners need curation, not denial.' },
+  noNeed: { label:'No Need More', response:'“You may not need more for how you travel now. The question is whether the account matches where your travel or family is going next.”', move:'Shift from present sufficiency to future structure.' },
+  fixedIncome: { label:'Fixed Income', response:'“Then the monthly comfort zone is the boundary. The only reason to look is if it reduces cash travel without disturbing retirement peace.”', move:'Protect peace. Retired owners buy certainty, not hype.' },
+  kidsWontUse: { label:'Kids May Not Use It', response:'“Then we should not build around them unless there is a real family lane or legacy plan. Otherwise it becomes extra dues wearing a costume.”', move:'Earn trust by disqualifying weak legacy logic.' },
+  kidsDontAppreciate: { label:'Family Fairness', response:'“What if the ownership covers lodging, but the adult kids handle food, tickets, or activities? Then it anchors the trip without making you fund the whole thing.”', move:'Solve resentment with contribution rules.' },
+  notForMe: { label:'Not For Solo Use', response:'“Solo travelers can be some of the most efficient owners if they use smaller units, shoulder season, and restoration trips intentionally.”', move:'Reframe solo usage from waste to efficiency.' },
+  guilt: { label:'Guilt Using It Alone', response:'“If the trip restores you enough to keep performing and not burn out, why is that less valid than a family trip?”', move:'Permission-based reframe.' },
+  exSchedules: { label:'Custody / Ex Schedules', response:'“We are not looking for perfect certainty. We are planting a flag early with Plan A, Plan B, and Plan C so the family can negotiate around dates.”', move:'Turn 13-month planning into an operating system.' },
+  math: { label:'Math / ROI', response:'“Let’s compare the added cost against the cash bailout pattern. If it beats the cash leakage, it is worth considering. If it does not, it is not.”', move:'Sophisticated maximizers need spreadsheet logic.' },
+  hangup: { label:'Hostile / Hang Up', response:'“I hear you. If I tried to sell you more credits before helping you use what you own, I’d deserve the hang-up.”', move:'Radical disarm. Agree with their suspicion and redirect to service.' }
+};
+
+let selectedOwner = owners[0];
+let selectedStage = 'recognize';
+let selectedObjection = null;
+
+function init() {
+  renderOwners();
+  renderFlow();
+  renderProfile();
+  renderGuide();
+  renderObjections();
+}
+
+function renderOwners(filter='') {
+  const list = document.getElementById('ownerList');
+  const q = filter.toLowerCase();
+  list.innerHTML = '';
+  owners.filter(o => [o.name,o.archetype,o.tier,o.pain,o.driver,o.tags.join(' ')].join(' ').toLowerCase().includes(q)).forEach(owner => {
+    const btn = document.createElement('button');
+    btn.className = 'ownerBtn' + (owner.id === selectedOwner.id ? ' active' : '');
+    btn.onclick = () => { selectedOwner = owner; selectedStage = 'recognize'; selectedObjection = null; renderOwners(document.getElementById('ownerSearch').value); renderFlow(); renderProfile(); renderGuide(); renderObjections(); renderObjectionGuide(); };
+    btn.innerHTML = `<strong>${owner.name}</strong><span>${owner.archetype} · ${owner.tier} · ${owner.credits} credits</span><div class="chips">${owner.tags.slice(0,4).map(t=>`<span class="chip">${t}</span>`).join('')}</div>`;
+    list.appendChild(btn);
+  });
+}
+
+function renderFlow() {
+  const wrap = document.getElementById('flowWrap');
+  wrap.innerHTML = '';
+  flow.forEach((s, i) => {
+    const stage = document.createElement('div');
+    stage.className = 'flowStage';
+    const b = document.createElement('button');
+    b.className = 'bubble' + (s.id === selectedStage ? ' active' : '');
+    b.onclick = () => { selectedStage = s.id; renderFlow(); renderGuide(); };
+    b.innerHTML = `<div class="num">${i+1}</div><div class="bubbleText"><strong>${s.title}</strong><span>${s.subtitle}</span></div>`;
+    stage.appendChild(b);
+    wrap.appendChild(stage);
+    if (s.id === 'benefits') {
+      const branch = document.createElement('div');
+      branch.className = 'branchRow';
+      selectedOwner.benefitModules.slice(0,6).forEach((m, idx) => {
+        const mb = document.createElement('button');
+        mb.className = 'miniBubble';
+        mb.textContent = m;
+        mb.onclick = () => { selectedStage = 'benefits'; renderFlow(); renderGuide(m); };
+        branch.appendChild(mb);
+      });
+      wrap.appendChild(branch);
+    }
+    if (i < flow.length - 1) {
+      const arrow = document.createElement('div');
+      arrow.className = 'arrow';
+      arrow.innerHTML = '↓';
+      wrap.appendChild(arrow);
+    }
+  });
+}
+
+function renderProfile() {
+  const el = document.getElementById('profileSummary');
+  el.innerHTML = `<div class="summaryCard"><b>${selectedOwner.archetype}</b><br>${selectedOwner.name}<br><span style="color:var(--muted);font-size:13px;">${selectedOwner.tier} · ${selectedOwner.credits} credits</span><div class="chips">${selectedOwner.tags.map(t=>`<span class="chip">${t}</span>`).join('')}</div></div>
+  <div class="summaryCard"><b>Recognize:</b> ${selectedOwner.recognizer}</div>
+  <div class="summaryCard"><b>Core gap:</b> ${selectedOwner.diagnosis}</div>`;
+}
+
+function renderGuide(benefit=null) {
+  const guide = document.getElementById('guide');
+  const s = flow.find(x => x.id === selectedStage);
+  const g = stageGuide[selectedStage];
+  let tailored = '';
+  if (selectedStage === 'discover') tailored = `<ul>${selectedOwner.stages.discovery.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+  if (selectedStage === 'diagnose') tailored = `<p class="scriptLine">${selectedOwner.diagnosis}</p>`;
+  if (selectedStage === 'recap') tailored = `<p class="scriptLine">${selectedOwner.stages.recap}</p>`;
+  if (selectedStage === 'benefits') tailored = `<p class="scriptLine">Recommended modules: ${selectedOwner.benefitModules.join(', ')}.${benefit ? '<br><br>Selected module: <b>' + benefit + '</b>. Tie it directly to the owner’s stated pain before explaining it.' : ''}</p>`;
+  if (selectedStage === 'recommend') tailored = `<p class="scriptLine">${selectedOwner.stages.recommendation}</p>`;
+  if (selectedStage === 'close') tailored = `<p class="scriptLine">${selectedOwner.stages.close}</p>`;
+  if (!tailored) tailored = `<p class="scriptLine">${selectedOwner.target}</p>`;
+
+  guide.innerHTML = `
+    <span class="stageBadge">Stage ${flow.findIndex(x=>x.id===selectedStage)+1} · ${s.tone}</span>
+    <h3 class="guideTitle">${s.title}</h3>
+    <div class="guideSection"><h4>Intention</h4><p>${g.intention}</p></div>
+    <div class="guideSection"><h4>Say</h4><p class="scriptLine">${g.say}</p></div>
+    <div class="guideSection"><h4>Ask</h4><ul>${g.ask.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+    <div class="guideSection"><h4>Owner-Specific Adaptation</h4>${tailored}</div>
+    <div class="guideSection"><h4>Watch For</h4><p>${g.watch}</p></div>
+  `;
+}
+
+function renderObjections() {
+  const box = document.getElementById('objections');
+  box.innerHTML = '';
+  selectedOwner.objections.forEach(id => {
+    const obj = objectionGuide[id];
+    const btn = document.createElement('button');
+    btn.className = 'objBtn' + (selectedObjection === id ? ' active' : '');
+    btn.textContent = obj.label;
+    btn.onclick = () => { selectedObjection = id; renderObjections(); renderObjectionGuide(); };
+    box.appendChild(btn);
+  });
+}
+
+function renderObjectionGuide() {
+  const el = document.getElementById('objectionGuide');
+  if (!selectedObjection) { el.innerHTML = ''; return; }
+  const obj = objectionGuide[selectedObjection];
+  el.innerHTML = `<div class="guideSection"><h4>${obj.label}</h4><p class="scriptLine">${obj.response}</p></div><div class="guideSection"><h4>Rep Move</h4><p>${obj.move}</p></div>`;
+}
+
+function nextStage() {
+  const idx = flow.findIndex(x => x.id === selectedStage);
+  selectedStage = flow[Math.min(flow.length - 1, idx + 1)].id;
+  renderFlow(); renderGuide();
+}
+function prevStage() {
+  const idx = flow.findIndex(x => x.id === selectedStage);
+  selectedStage = flow[Math.max(0, idx - 1)].id;
+  renderFlow(); renderGuide();
+}
+function resetFlow() { selectedStage = 'recognize'; selectedObjection = null; renderFlow(); renderGuide(); renderObjections(); renderObjectionGuide(); }
+function copyStage() {
+  const g = stageGuide[selectedStage];
+  const text = `${selectedOwner.name} · ${selectedOwner.archetype}\nStage: ${flow.find(x=>x.id===selectedStage).title}\nIntention: ${g.intention}\nSay: ${g.say}\nAsk: ${g.ask.join(' | ')}\nOwner adaptation: ${selectedOwner.stages[selectedStage] || selectedOwner.target}`;
+  navigator.clipboard.writeText(text).then(() => alert('Current stage copied.'));
+}
+
+document.getElementById('ownerSearch').addEventListener('input', (e)=>renderOwners(e.target.value));
+init();
+</script>
+</body>
+</html>
